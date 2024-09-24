@@ -12,14 +12,16 @@ class StreamService
 
     public function getClient(): CloudWatchLogsClient
     {
-        return new CloudWatchLogsClient([
+        $config = [
+            'endpoint' => config('nova_aws_cloudwatch.aws.endpoint'),
             'region' => $this->getRegion(),
             'version' => '2014-03-28',
             'credentials' => array(
                 'key' => config('nova_aws_cloudwatch.aws.key'),
                 'secret' => config('nova_aws_cloudwatch.aws.secret'),
             ),
-        ]);
+        ];
+        return new CloudWatchLogsClient($config);
     }
 
     public function getRegion()

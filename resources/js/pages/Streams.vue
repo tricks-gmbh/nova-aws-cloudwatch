@@ -116,7 +116,7 @@ export default {
     },
     methods: {
         getUrl(stream) {
-            return '/admin/nova-aws-cloudwatch/stream?log_group_name=' + this.log_group_name + '&stream=' + stream.name;
+            return '/nova/nova-aws-cloudwatch/stream?log_group_name=' + this.log_group_name + '&stream=' + stream.name;
         },
         toDateTime(date) {
             return moment(date).format(this.config.date_time_format);

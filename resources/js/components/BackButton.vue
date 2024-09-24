@@ -27,7 +27,7 @@ export default {
     },
     methods: {
         getUrl() {
-            return '/admin/nova-aws-cloudwatch/streams?log_group_name=' + this.logGroupName;
+            return '/nova/nova-aws-cloudwatch/streams?log_group_name=' + this.logGroupName;
         }
     },
     mounted() {

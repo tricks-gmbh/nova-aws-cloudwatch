@@ -59,7 +59,7 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function menu()
     {
-        return MenuSection::make('Price Tracker')
+        return MenuSection::make()
             ->path('/nova-aws-cloudwatch')
             ->icon('server');
     }

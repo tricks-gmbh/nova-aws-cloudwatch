@@ -76,7 +76,7 @@ export default {
     },
     methods: {
         getUrl(group) {
-            return '/admin/nova-aws-cloudwatch/streams?log_group_name=' + group;
+            return '/nova/nova-aws-cloudwatch/streams?log_group_name=' + group;
         }
     },
 }
