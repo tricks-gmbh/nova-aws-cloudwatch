@@ -1,56 +1,60 @@
 <?php
 
-namespace Codetechnl\NovaAwsCloudwatch\Http\Controllers;
+namespace Tricks\NovaAwsCloudwatch\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use Codetechnl\NovaAwsCloudwatch\Http\Requests\InertiaRequest;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Arr;
+use Inertia\Inertia;
+use Inertia\Response;
+use Laravel\Nova\Http\Requests\NovaRequest;
+use Tricks\NovaAwsCloudwatch\StreamService;
 
 class InertiaController extends Controller
 {
 
-    /**
-     * @param InertiaRequest $request
-     * @return \Inertia\Response|\Inertia\ResponseFactory
-     */
-    public function main(InertiaRequest $request)
+    public function index(NovaRequest $request, StreamService $service): Response
     {
-        return $this->output('NovaAwsCloudwatch');
+        return Inertia::render('NovaAwsCloudwatchGroups')
+            ->with('groups', $service->getLogGroups());
     }
 
-    /**
-     * @param InertiaRequest $request
-     * @return \Inertia\Response|\Inertia\ResponseFactory
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
-    public function streams(InertiaRequest $request)
+    public function showGroup(NovaRequest $request, StreamService $service, string $group): Response
     {
-        return $this->output('NovaAwsCloudwatchStreams', [
-            'log_group_name' => $request->get('log_group_name')
-        ]);
+        abort_if($this->groupNotAllowed($group), 404);
+
+        $streams = $service->getLogStreams($group);
+
+        return Inertia::render('NovaAwsCloudwatchStreams')
+            ->with('group', $group)
+            ->with('streams', $streams);
     }
 
-    /**
-     * @param InertiaRequest $request
-     * @return \Inertia\Response|\Inertia\ResponseFactory
-     */
-    public function stream(InertiaRequest $request)
+    public function showStream(NovaRequest $request, StreamService $service, string $group, string $stream): Response
     {
-        return $this->output('NovaAwsCloudwatchStream', [
-            'stream' => $request->get('stream'),
-            'log_group_name' => $request->get('log_group_name')
-        ]);
+        abort_if($this->groupNotAllowed($group), 404);
+
+        $streamContent = $service->getLogStreamContents($group, $stream);
+
+        return Inertia::render('NovaAwsCloudwatchStreamContent')
+            ->with('group', $group)
+            ->with('stream', $stream)
+            ->with('streamContent', $streamContent);
     }
 
-    /**
-     * @param $component
-     * @param array $output
-     * @return \Inertia\Response|\Inertia\ResponseFactory
-     */
-    protected function output($component, array $output = [])
+    public function groupNotAllowed(string $group): bool
     {
-        return inertia($component, [
-                'config' => config()->get('nova_aws_cloudwatch.interface')
-            ] + $output);
+        $onlyRules = config('nova_aws_cloudwatch.groups.only');
+
+        if ($onlyRules !== []) {
+            return in_array($group, $onlyRules);
+        }
+
+        $excludeRules = config('nova_aws_cloudwatch.groups.exclude');
+
+        if ($excludeRules !== []) {
+            return ! in_array($group, $excludeRules);
+        }
+
+        return false;
     }
 }

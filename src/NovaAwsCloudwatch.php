@@ -1,32 +1,24 @@
 <?php
 
-namespace Codetechnl\NovaAwsCloudwatch;
+namespace Tricks\NovaAwsCloudwatch;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Laravel\Nova\Menu\MenuSection;
 use Laravel\Nova\Nova;
 use Laravel\Nova\Tool;
 
 class NovaAwsCloudwatch extends Tool
 {
-    /**
-     * Perform any tasks that need to happen when the tool is booted.
-     *
-     * @return void
-     */
-    public function boot()
+    public function boot(): void
     {
-        Nova::script('nova-aws-cloudwatch', __DIR__.'/../dist/js/tool.js');
-        Nova::style('nova-aws-cloudwatch', __DIR__.'/../dist/css/tool.css');
+        $manifest = File::json(__DIR__.'/../dist/manifest.json');
+
+        Nova::script('nova-aws-cloudwatch', __DIR__.'/../dist/'.$manifest['resources/js/tool.ts']['file']);
+        Nova::style('nova-aws-cloudwatch', __DIR__.'/../dist/'.$manifest['style.css']['file']);
     }
 
-    /**
-     * Build the menu that renders the navigation links for the tool.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @return mixed
-     */
-    public function menu(Request $request)
+    public function menu(Request $request): MenuSection
     {
         return MenuSection::make('Nova Aws Cloudwatch')
             ->path('/nova-aws-cloudwatch')

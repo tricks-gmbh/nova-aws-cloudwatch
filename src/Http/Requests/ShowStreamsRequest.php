@@ -1,35 +1,44 @@
 <?php
 
-namespace Codetechnl\NovaAwsCloudwatch\Http\Requests;
+namespace Tricks\NovaAwsCloudwatch\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\Rule;
 
 class ShowStreamsRequest extends FormRequest
 {
-
-    public function rules()
+    public function rules(): array
     {
-        return [];
-    }
+        $rules = [
+            'log_group_name' => [
+                'required',
+            ],
+        ];
 
-    public function getLogGroupName()
-    {
-        return $this->get('log_group_name');
-    }
-
-    public function allowGroupName()
-    {
-        $exclude = config('nova_aws_cloudwatch.groups.exclude');
-        $only = config('nova_aws_cloudwatch.groups.only');
-
-        if (!empty($exclude)) {
-            return !in_array($this->getLogGroupName(), $exclude);
+        $onlyRules = config('nova_aws_cloudwatch.groups.only');
+        if ($onlyRules !== []) {
+            $rules['log_group_name'][] = Rule::in($onlyRules);
         }
 
-        if (!empty($only)) {
-            return in_array($this->getLogGroupName(), $only);
+        $excludeRules = config('nova_aws_cloudwatch.groups.exclude');
+        if ($excludeRules !== []) {
+            $rules['log_group_name'][] = Rule::notIn($excludeRules);
         }
 
-        return true;
+        return $rules;
+    }
+
+    protected function failedValidation(Validator $validator): JsonResponse
+    {
+        dd($validator->errors());
+        return new JsonResponse(
+            data: [
+                'status' => 'error',
+                'message' => __('LogGroupName not allowed')
+            ],
+            status: 403
+        );
     }
 }

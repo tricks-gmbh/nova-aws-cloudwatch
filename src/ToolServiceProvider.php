@@ -1,65 +1,55 @@
 <?php
 
-namespace Codetechnl\NovaAwsCloudwatch;
+namespace Tricks\NovaAwsCloudwatch;
 
-use Illuminate\Support\Facades\Route;
+use Aws\CloudWatchLogs\CloudWatchLogsClient;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Nova\Http\Middleware\Authenticate;
-use Laravel\Nova\Nova;
-use Codetechnl\NovaAwsCloudwatch\Http\Middleware\Authorize;
 use Laravel\Nova\Menu\MenuSection;
+use Laravel\Nova\Nova;
 
-/**
- *
- */
 class ToolServiceProvider extends ServiceProvider
 {
-    /**
-     * Bootstrap any application services.
-     *
-     * @return void
-     */
-    public function boot()
+    public function register(): void
     {
-        Nova::script('NovaAwsCloudwatch', __DIR__.'/../dist/js/tool.js');
+        $this->mergeConfigFrom(
+            __DIR__.'/../config/nova_aws_cloudwatch.php', 'nova_aws_cloudwatch'
+        );
+    }
 
+    public function boot(): void
+    {
         $this->app->booted(function () {
             $this->routes();
         });
-
-        $this->mergeConfigFrom(__DIR__.'../../config/nova_aws_cloudwatch.php', 'nova_aws_cloudwatch');
-
-    }
-
-    /**
-     * Register the tool's routes.
-     *
-     * @return void
-     */
-    protected function routes()
-    {
-        if ($this->app->routesAreCached()) {
-            return;
-        }
 
         $this->publishes([
             __DIR__.'/../config/nova_aws_cloudwatch.php' => config_path('nova_aws_cloudwatch.php')
         ], 'nova-aws-cloudwatch-config');
 
-        Nova::router(['nova', Authenticate::class, Authorize::class], 'nova-aws-cloudwatch')
-            ->group(__DIR__ . '/../routes/inertia.php');
-
-        Route::middleware(['nova', Authorize::class])
-            ->prefix('nova-vendor/nova-aws-cloudwatch')
-            ->group(__DIR__ . '/../routes/api.php');
+        $this->app->singleton(CloudWatchLogsClient::class, function (Application $app) {
+            $cloudwatchConfig = config('logging.channels.cloudwatch');
+            return new CloudWatchLogsClient([
+                'region' => $cloudwatchConfig['region'],
+                'version' => $cloudwatchConfig['version'],
+                'credentials' => $cloudwatchConfig['credentials'],
+                'endpoint' => $cloudwatchConfig['endpoint'],
+            ]);
+        });
     }
 
-    /**
-     * @return MenuSection
-     */
-    public function menu()
+    protected function routes(): void
     {
-        return MenuSection::make()
+        if ($this->app->routesAreCached()) {
+            return;
+        }
+
+        $this->loadRoutesFrom(__DIR__.'/../routes/inertia.php');
+    }
+
+    public function menu(): MenuSection
+    {
+        return MenuSection::make('Cloudwatch Logs')
             ->path('/nova-aws-cloudwatch')
             ->icon('server');
     }

@@ -24,8 +24,6 @@ then filtered on what to exclude and what to hide. If you make a typo, the LogGr
 
 `aws.*` => Speaks for themselves
 
-`interface.date_time_format` => Set your display preference. This is based on MomentJS. Read the docs to discover how to format the datetime
-
 ## To do
 - [ ] Support multiple AWS Regions
 - [ ] Make table rows clickable

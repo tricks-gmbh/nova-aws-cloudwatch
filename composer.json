@@ -1,6 +1,6 @@
 {
-    "name": "codetechnl/nova-aws-cloudwatch",
-    "description": "Laravel Nova 4 | Get the logs from AWS CloudWatch",
+    "name": "tricks/nova-aws-cloudwatch",
+    "description": "Logging using aws Cloudwatch and Nova 4",
     "keywords": [
         "laravel",
         "nova"
@@ -9,28 +9,45 @@
         {
             "name": "Donny van Grondelle",
             "email": "info@codetech.nl"
+        },
+        {
+            "name": "Naren Chitrakar",
+            "email": "developer.naren@gmail.com"
+        },
+        {
+            "name": "Sujan Shrestha",
+            "email": "najus.shrestha@gmail.com"
         }
     ],
     "license": "MIT",
     "require": {
-        "php": "^7.3|^8.0",
-        "laravel/nova": "~4.0"
+        "php": "^8.3",
+        "aws/aws-sdk-php": "^3.320",
+        "laravel/nova": "^4.0",
+        "phpnexus/cwh": "^3.0.0",
+        "tightenco/ziggy": "^2.3"
     },
     "autoload": {
         "psr-4": {
-            "Codetechnl\\NovaAwsCloudwatch\\": "src/"
+            "Tricks\\NovaAwsCloudwatch\\": "src/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Codetechnl\\NovaAwsCloudwatch\\ToolServiceProvider"
+                "Tricks\\NovaAwsCloudwatch\\ToolServiceProvider"
             ]
         }
     },
     "config": {
         "sort-packages": true
     },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://nova.laravel.com"
+        }
+    ]
 }

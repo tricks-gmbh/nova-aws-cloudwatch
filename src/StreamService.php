@@ -1,56 +1,39 @@
 <?php
 
-namespace Codetechnl\NovaAwsCloudwatch;
+namespace Tricks\NovaAwsCloudwatch;
 
 use Aws\CloudWatchLogs\CloudWatchLogsClient;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 
 class StreamService
 {
-    protected $region;
+    /** @var array<int,string> */
+    protected array $groupsOnly;
+    /** @var array<int,string> */
+    protected array $groupsExclude;
 
-
-    public function getClient(): CloudWatchLogsClient
+    public function __construct(protected CloudWatchLogsClient $client)
     {
-        $config = [
-            'endpoint' => config('nova_aws_cloudwatch.aws.endpoint'),
-            'region' => $this->getRegion(),
-            'version' => '2014-03-28',
-            'credentials' => array(
-                'key' => config('nova_aws_cloudwatch.aws.key'),
-                'secret' => config('nova_aws_cloudwatch.aws.secret'),
-            ),
-        ];
-        return new CloudWatchLogsClient($config);
+        $config = config('nova_aws_cloudwatch.groups');
+        $this->groupsOnly = $config['only'];
+        $this->groupsExclude = $config['exclude'];
     }
 
-    public function getRegion()
+    public function getLogGroups(): array
     {
-        if ($this->region) {
-            return $this->region;
-        }
+        $data = $this->client
+            ->describeLogGroups()
+            ->get('logGroups');
 
-        return $this->getConfig('aws.region');
-    }
+        $groups = Arr::where($data, function (array $data) {
 
-    /**
-     * @return array
-     */
-    public function getLogGroups()
-    {
-        $data = $this->getClient()->describeLogGroups();
-
-        $allowOnly = $this->getConfig('groups.only');
-        $exclude = $this->getConfig('groups.exclude');
-
-        $groups = Arr::where($data->get('logGroups'), function ($data) use ($allowOnly, $exclude) {
-
-            if (!empty($allowOnly)) {
-                return in_array($data['logGroupName'], $allowOnly);
+            if ($this->groupsOnly !== []) {
+                return in_array($data['logGroupName'], $this->groupsOnly);
             }
 
-            if (!empty($exclude)) {
-                return !in_array($data['logGroupName'], $exclude);
+            if ($this->groupsExclude !== []) {
+                return ! in_array($data['logGroupName'], $this->groupsExclude);
             }
 
             return true;
@@ -59,45 +42,39 @@ class StreamService
         return Arr::pluck($groups, 'logGroupName');
     }
 
-    public function getLogStreams(mixed $logGroupName)
+    public function getLogStreams(mixed $logGroupName): array
     {
-        return Arr::map($this->getClient()->describeLogStreams([
-            'logGroupName' => $logGroupName
+        $data = $this->client
+            ->describeLogStreams([
+                'logGroupName' => $logGroupName
+            ])
+            ->get('logStreams');
 
-        ])->get('logStreams'), function (array $stream) {
-            return [
-                'name' => $stream['logStreamName'],
-                'timestamps' => [
-                    'firstEventTimestamp' => $stream['firstEventTimestamp'],
-                    'lastEventTimestamp' => $stream['lastEventTimestamp'],
-                    'lastIngestionTime' => $stream['lastIngestionTime']
-                ]
-            ];
-        });
+        return Arr::map($data, fn (array $stream) => [
+            'name' => $stream['logStreamName'],
+            'timestamps' => [
+                'firstEventTimestamp' => Carbon::createFromTimestampMs($stream['firstEventTimestamp'])->toDateTimeString(),
+                'lastEventTimestamp' => Carbon::createFromTimestampMs($stream['lastEventTimestamp'])->toDateTimeString(),
+                'lastIngestionTime' => Carbon::createFromTimestampMs($stream['lastIngestionTime'])->toDateTimeString()
+            ]
+        ]);
     }
 
-    public function getLogStreamContents(string $logGroupName, string $stream)
+    public function getLogStreamContents(string $logGroupName, string $stream): string
     {
-        return $this->getClient()->getLogEvents([
-            'logGroupName' => $logGroupName,
-            'logStreamName' => $stream
-        ])->get('events');
+        $events = $this->client
+            ->getLogEvents([
+                'logGroupName' => $logGroupName,
+                'logStreamName' => $stream
+            ])
+            ->get('events');
+
+        return collect($events)
+            ->map(fn (array $event) => [
+                'timestamp' => Carbon::createFromTimestampMs($event['timestamp'])->toDateTimeString(),
+                'message' => $event['message'],
+            ])
+            ->map(fn (array $event) => '['.$event['timestamp'].'] '.$event['message'])
+            ->join(PHP_EOL);
     }
-
-    protected function allowLogGroup(array $group, array $allowOnly)
-    {
-        return in_array($group['logGroupName'], $allowOnly);
-    }
-
-    protected function excludeLogGroup(array $group, array $exclude)
-    {
-        return !in_array($group['logGroupName'], $exclude);
-    }
-
-    protected function getConfig(string $config)
-    {
-        return config()->get('nova_aws_cloudwatch.' . $config);
-    }
-
-
 }

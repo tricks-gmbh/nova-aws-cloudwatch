@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "module": "esnext",
+        "target": "esnext",
+        "noImplicitAny": true,
+        "sourceMap": true,
+        "baseUrl": ".",
+        "moduleResolution": "node",
+        "paths": {
+            "@nova": ["../../vendor/laravel/nova/resources/js/mixins/packages.js"]
+        },
+        "allowSyntheticDefaultImports": true
+    }
+}
