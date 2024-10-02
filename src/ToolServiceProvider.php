@@ -6,7 +6,6 @@ use Aws\CloudWatchLogs\CloudWatchLogsClient;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Nova\Menu\MenuSection;
-use Laravel\Nova\Nova;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -29,12 +28,18 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->app->singleton(CloudWatchLogsClient::class, function (Application $app) {
             $cloudwatchConfig = config('logging.channels.cloudwatch');
-            return new CloudWatchLogsClient([
+
+            $clientConfig = [
                 'region' => $cloudwatchConfig['region'],
                 'version' => $cloudwatchConfig['version'],
-                'credentials' => $cloudwatchConfig['credentials'],
                 'endpoint' => $cloudwatchConfig['endpoint'],
-            ]);
+            ];
+
+            if (isset($cloudwatchConfig['credentials']['key'])) {
+                $clientConfig['credentials'] = $cloudwatchConfig['credentials'];
+            }
+
+            return new CloudWatchLogsClient($clientConfig);
         });
     }
 
