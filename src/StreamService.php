@@ -51,11 +51,11 @@ class StreamService
             ->get('logStreams');
 
         return Arr::map($data, fn (array $stream) => [
-            'name' => $stream['logStreamName'],
+            'name' => $stream['logStreamName'] ?? '–',
             'timestamps' => [
-                'firstEventTimestamp' => Carbon::createFromTimestampMs($stream['firstEventTimestamp'])->toDateTimeString(),
-                'lastEventTimestamp' => Carbon::createFromTimestampMs($stream['lastEventTimestamp'])->toDateTimeString(),
-                'lastIngestionTime' => Carbon::createFromTimestampMs($stream['lastIngestionTime'])->toDateTimeString()
+                'firstEventTimestamp' => Carbon::createFromTimestampMs($stream['firstEventTimestamp'] ?? 0)->toDateTimeString(),
+                'lastEventTimestamp' => Carbon::createFromTimestampMs($stream['lastEventTimestamp'] ?? 0)->toDateTimeString(),
+                'lastIngestionTime' => Carbon::createFromTimestampMs($stream['lastIngestionTime'] ?? 0)->toDateTimeString(),
             ]
         ]);
     }
@@ -71,8 +71,8 @@ class StreamService
 
         return collect($events)
             ->map(fn (array $event) => [
-                'timestamp' => Carbon::createFromTimestampMs($event['timestamp'])->toDateTimeString(),
-                'message' => $event['message'],
+                'timestamp' => Carbon::createFromTimestampMs($event['timestamp'] ?? 0)->toDateTimeString(),
+                'message' => $event['message'] ?? null,
             ])
             ->map(fn (array $event) => '['.$event['timestamp'].'] '.$event['message'])
             ->join(PHP_EOL);
